@@ -1,2 +1,6 @@
 # binaries
 *.out
+*.o
+
+# Ouput directory
+ProofOfConcept/bin/
