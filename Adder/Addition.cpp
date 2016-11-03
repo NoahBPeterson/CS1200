@@ -1,4 +1,4 @@
-#include "addition.h"
+#include "Addition.h"
 
 bool* addBits(bool bit1, bool bit2){
   bool* output = new bool[2];
