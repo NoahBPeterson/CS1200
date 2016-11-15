@@ -8,9 +8,13 @@ const int ADD_BUTT = A2; //Adds LEDs 1-3 + 4-6
 
 int currentLED = 0;
 
+bool bitPressed = false;
+bool addPressed = false;
+bool togPressed = false;
+
 bool row1[3];
 bool row2[3];
-bool out[4];
+bool* out;
 
 
 void setup() {
@@ -36,25 +40,41 @@ void loop() {
   bool valBit = digitalRead(BIT_BUTT); //Reads LED switcher button
   bool valTog = digitalRead(TOGGLE_BUTT); //Toggles LED value
 
-  if(valBit){
+  if(valBit&&!bitPressed){
     currentLED++;
+    bitPressed=true;
     }
-  if(valTog&&currentLED<=3){ //If valTog is true, change current LED
-      row1[currentLED]=true; //Make false if already true, do later
-      digitalWrite(LED[currentLED],valTog);
+   if(!valBit){
+    bitPressed=false;
     }
-  if(valTog&&currentLED>3){
-      row2[currentLED]=true;
-      digitalWrite(LED[currentLED],valTog);
+   
+  if(valTog&&!togPressed){
+    togPressed=true;
+    valTogger(valTog);
+    }
+   if(!valTog){
+    togPressed=false;
     }
 
   if(valAdd){
-    *out = binaryAdd(row1, row2, 4);
+    out = binaryAdd(row1, row2, 4);
     for(int i = 0; i < 4; i++){
       digitalWrite(LED[6+i],out[i]);
       }
     }
     
   
+}
+
+void valTogger(bool valTog){
+  
+  if(currentLED<=3){ //If valTog is true, change current LED
+      row1[currentLED]=true; //Make false if already true, do later
+      digitalWrite(LED[currentLED],valTog);
+    }
+  if(currentLED>3){
+      row2[currentLED]=true;
+      digitalWrite(LED[currentLED],valTog);
+    }
 }
 
