@@ -1,80 +1,138 @@
-#include "Addition.h"
+const byte LED[10] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
 
-const int LED[10] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-
-const int TOGGLE_BUTT = A0; //Toggles LED value: 1 to 0 to 1...
-const int BIT_BUTT = A1; //Switches between LEDs
-const int ADD_BUTT = A2; //Adds LEDs 1-3 + 4-6
-
-int currentLED = 0;
-
-bool bitPressed = false;
-bool addPressed = false;
-bool togPressed = false;
-
-bool row1[3];
-bool row2[3];
-bool* out;
+const byte TOGGLE_BUTT = A0; //Toggles LED value: 1 to 0 to 1...
+const byte BIT_BUTT = A1; //Switches between LEDs
+const byte ADD_BUTT = A2; //Adds LEDs 1-3 + 4-6
 
 
+bool* addBits(const bool bit1, const bool bit2) {
+  bool* output = new bool[2];
+  output[0] = bit1 && bit2;// most signifcant bit
+  output[1] = bit1 ^ bit2;// least significant bit
+  return output;
+}
+
+bool* addBits(const bool bit1, const bool bit2, const bool carriedBit) {
+  bool* output = addBits(bit2, bit1);// add the two bits
+  output[0] |= addBits(output[1], carriedBit)[0];// or operaton most significant
+  output[1] = addBits(output[1], carriedBit)[1];// add carried bit to least significant
+  return output;
+}
+
+bool* binaryAdd(const bool* input1, const bool* input2, const byte outputLength) {
+  bool* output = new bool[outputLength];
+  for (byte i = outputLength - 1; i > 0; i--) {
+    // carry a bit into the next place value
+    output[i - 1] = addBits(input1[i - 1], input2[i - 1], output[i])[0];
+    // actually add the 2 bits (and the carried bit) in the current place value
+    output[i] = addBits(input1[i - 1], input2[i - 1], output[i])[1];
+  }
+  return output;
+}
+
+/**
+ * Run once before loop
+ */
 void setup() {
-  pinMode(LED[0], OUTPUT);
-  pinMode(LED[1], OUTPUT);
-  pinMode(LED[2], OUTPUT);
-  pinMode(LED[3], OUTPUT);
-  pinMode(LED[4], OUTPUT);
-  pinMode(LED[5], OUTPUT);
-  pinMode(LED[6], OUTPUT);
-  pinMode(LED[7], OUTPUT);
-  pinMode(LED[8], OUTPUT);
-  pinMode(LED[9], OUTPUT);
+  for (byte i = 0; i < 10; i++) {
+    pinMode(LED[i], OUTPUT);
+  }
 
   pinMode(TOGGLE_BUTT, INPUT);
   pinMode(BIT_BUTT, INPUT);
   pinMode(ADD_BUTT, INPUT);
 
+  Serial.begin(9600);
 }
 
+/**
+ * Run often in a loop
+ */
 void loop() {
-  bool valAdd = digitalRead(ADD_BUTT); //Reads adder button
-  bool valBit = digitalRead(BIT_BUTT); //Reads LED switcher button
-  bool valTog = digitalRead(TOGGLE_BUTT); //Toggles LED value
+  static byte currentLED = 0;
+  static bool bitPressed = false;
+  static bool addPressed = false;
+  static bool togPressed = false;
+  static bool row1[3] = {false, false, false};
+  static bool row2[3] = {false, false, false};
+  static bool *sum = new bool[4];
 
-  if(valBit&&!bitPressed){
-    currentLED++;
-    bitPressed=true;
-    }
-   if(!valBit){
-    bitPressed=false;
-    }
-   
-  if(valTog&&!togPressed){
-    togPressed=true;
-    valTogger(valTog);
-    }
-   if(!valTog){
-    togPressed=false;
-    }
+  static bool *output = new bool[10];
 
-  if(valAdd){
-    out = binaryAdd(row1, row2, 4);
-    for(int i = 0; i < 4; i++){
-      digitalWrite(LED[6+i],out[i]);
+  static bool valTog = digitalRead(TOGGLE_BUTT);
+  static bool valBit = digitalRead(BIT_BUTT);
+  static bool valAdd = digitalRead(ADD_BUTT);
+
+  while (true) {
+    valTog = digitalRead(TOGGLE_BUTT);
+    valBit = digitalRead(BIT_BUTT);
+    valAdd = digitalRead(ADD_BUTT);
+
+    // change which bit is being modified
+    if (valBit && !bitPressed) {
+      if (currentLED >= 5) {
+        currentLED = 0;
+      } else {
+        currentLED++;
+      }
+      Serial.print("Next bit ");
+      Serial.println(currentLED);
+    }
+    bitPressed = valBit;
+
+    // toggle a bit
+    if (valTog && !togPressed) {
+      Serial.print("Toggled a bit ");
+      if (currentLED < 3) { // change current LED
+        row1[currentLED] = !row1[currentLED]; //Make false if already true
+        Serial.print(currentLED);
+        Serial.print(" ");
+        Serial.println(row1[currentLED]);
+      } else {
+        row2[currentLED - 3] = !row2[currentLED - 3];
+        Serial.print(currentLED);
+        Serial.print(" ");
+        Serial.println(row2[currentLED - 3]);
       }
     }
-    
-  
-}
+    togPressed = valTog;
 
-void valTogger(bool valTog){
-  
-  if(currentLED<=3){ //If valTog is true, change current LED
-      row1[currentLED]=true; //Make false if already true, do later
-      digitalWrite(LED[currentLED],valTog);
+    if (valAdd) {
+      // calculate sum
+      sum = binaryAdd(row1, row2, 4);
+      for (byte i = 0; i < 3; i++) {
+        Serial.print(row1[i]);
+      }
+      Serial.print(" + ");
+      for (byte i = 0; i < 3; i++) {
+        Serial.print(row2[i]);
+      }
+      Serial.print(" = ");
+      for (byte i = 0; i < 4; i++) {
+        Serial.print(sum[i]);
+      }
+      Serial.println(" Calculated sum");
     }
-  if(currentLED>3){
-      row2[currentLED]=true;
-      digitalWrite(LED[currentLED],valTog);
+
+    // write to input LEDs
+    for (byte i = 0; i < 6; i++) {
+      if (i < 3) {
+        output[i] = row1[i];
+      } else {
+        output[i] = row2[i - 3];
+      }
     }
+
+    // output sum
+    for (byte i = 0; i < 4; i++) {
+      output[6 + i] = sum[i];
+    }
+
+    for (byte i = 0; i < 10; i++) {
+      // write to LEDs
+      digitalWrite(LED[i], output[i]);
+    }
+    delay(100);
+  }
 }
 
