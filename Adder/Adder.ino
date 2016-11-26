@@ -98,6 +98,9 @@ void loop() {
     togPressed = valTog;
 
     if (valAdd) {
+      for (byte i = 0; i < 4; i++){
+        sum[i] = 0;
+      }
       // calculate sum
       sum = binaryAdd(row1, row2, 4);
       for (byte i = 0; i < 3; i++) {
