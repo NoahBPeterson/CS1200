@@ -4,7 +4,20 @@ const byte TOGGLE_BUTT = A0; //Toggles LED value: 1 to 0 to 1...
 const byte BIT_BUTT = A1; //Switches between LEDs
 const byte ADD_BUTT = A2; //Adds LEDs 1-3 + 4-6
 
+/*
+ * digital 2-4 for first input number
+ * digital 5-7 for second input number
+ * digital 8-11 for sum
+ * 
+ * analog 0-2 for buttons
+ */
 
+/**
+ * Sum of two bits
+ * @param bit1 first bit do add
+ * @param bit2 second bit to add
+ * @return array with the 1st bool (index 0) as the most significant bit
+ */
 bool* addBits(const bool bit1, const bool bit2) {
   bool* output = new bool[2];
   output[0] = bit1 && bit2;// most signifcant bit
@@ -12,6 +25,13 @@ bool* addBits(const bool bit1, const bool bit2) {
   return output;
 }
 
+/**
+ * Add two bits with a bit carried from another addition
+ * @param bit1 first bit do add
+ * @param bit2 second bit to add
+ * @param carriedBit bit that was carried from addition of less significant bits
+ * @return array with the 1st bool (index 0) as the most significant bit
+ */
 bool* addBits(const bool bit1, const bool bit2, const bool carriedBit) {
   bool* output = addBits(bit2, bit1);// add the two bits
   output[0] |= addBits(output[1], carriedBit)[0];// or operaton most significant
@@ -19,6 +39,14 @@ bool* addBits(const bool bit1, const bool bit2, const bool carriedBit) {
   return output;
 }
 
+/**
+ * Perform binary addition on two binary numbers
+ * The most significant bit will have an array index of 0.
+ * @param input1 first bool array representing the first binary number
+ * @param input2 second bool array representing the second binary number
+ * @param outputLength should be the length of each input array + 1
+ * @return sum of the two numbers as a bool array
+ */
 bool* binaryAdd(const bool* input1, const bool* input2, const byte outputLength) {
   bool* output = new bool[outputLength];
   for (byte i = outputLength - 1; i > 0; i--) {
@@ -138,4 +166,3 @@ void loop() {
     delay(100);
   }
 }
-
